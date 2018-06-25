@@ -159,9 +159,6 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
-    action arp_forward(egressSpec_t port) {
-        standard_metadata.egress_spec = port;
-     }
 
     table ipv4_lpm {
         key = {
@@ -178,19 +175,6 @@ control MyIngress(inout headers hdr,
         default_action = NoAction();
     }
 
-    table arp_send{
-        key = {
-           hdr.arp.dst_ip: lpm;
-        }
-        actions = {
-           arp_forward;
-	   NoAction;
-        }
-        size = 1024;
-        default_action= NoAction();
-     }
-
-
     table ecmp_nhop {
         key = {
             meta.ecmp_select: exact;
@@ -205,17 +189,12 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
-        if(hdr.arp.isValid()){
-            arp_send.apply();
+        if (hdr.ipv4.isValid()) {
+            ipv4_lpm.apply();
 
-        }else{
-	        if (hdr.ipv4.isValid()) {
-	            ipv4_lpm.apply();
-
-	            if( standard_metadata.ingress_port == 1){
-                   	     ecmp_nhop.apply();
-                    }
-	        }	
+            if( standard_metadata.ingress_port == 1){
+           	     ecmp_nhop.apply();
+            }	
          }
     }
 }

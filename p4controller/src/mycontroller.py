@@ -229,30 +229,36 @@ def main(p4info_file_path, bmv2_file_path):
     #writeArpRule(p4info_helper, switches["s1"], "10.0.1.1", 1, 32)
 
 
-    #writeIpv4Rule(p4info_helper, switches["s3"], "10.0.2.2", "00:00:00:00:02:02", 2, 32)
+    #path1 2 -> 1
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.1.1", "00:00:00:00:01:01", 9, 32)
 
-
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.1.1", "00:00:00:00:01:01", 2, 32)
+    #delivering video
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.2", "00:00:00:00:02:02", 1, 32)
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.3", "00:00:00:00:02:03", 2, 32)
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.4", "00:00:00:00:02:04", 3, 32)
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.5", "00:00:00:00:02:05", 4, 32)
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.6", "00:00:00:00:02:06", 5, 32)
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.7", "00:00:00:00:02:07", 6, 32)
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.8", "00:00:00:00:02:08", 7, 32)
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.9", "00:00:00:00:02:09", 8, 32)
 
+
+    #request to server
     writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.1", "00:00:00:00:01:01", 1, 32)
+
+    #(without balancing) path 1 -> 2
+    # writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.0", "00:00:00:00:02:02", 2, 24)
+
+    #path 1 -> 2 -> 3
+    simpleForwarding(p4info_helper, switches["s3"], "10.0.2.0", 2, 24)
+
     
-    #writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.2", "00:00:00:00:02:02", 2, 32)
 
-    simpleForwarding(p4info_helper, switches["s3"], "10.0.2.2", 2, 32)
-
-
-    
-    writeBalancingEntry(p4info_helper,ingress_sw=switches["s1"], dst_ip_addr="10.0.2.2", ecmp_base=0, ecmp_count=2, prefix_size=32)
+    #turn on balancer
+    writeBalancingEntry(p4info_helper,ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", ecmp_base=0, ecmp_count=2, prefix_size=24)
     setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=1, switch_port=2)
     setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=0, switch_port=3)
     
-
-
-    #back to the border switch
-
- #   writeFknEgress(p4info_helper, switches["s1"], "10.0.1.1", "00:00:00:00:01:01", 1)
- #   writeFknEgress(p4info_helper, switches["s1"], "10.0.1.2", "00:00:00:00:01:02", 2)
     
 
     # TODO Uncomment the following two lines to read table entries from s1 and s2

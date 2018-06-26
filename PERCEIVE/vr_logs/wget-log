@@ -1,7 +1,0 @@
---2018-06-20 17:16:13--  http://10.0.7.3/v1/12x4/out_v1_720_12x4_tiled_dash_track25_1.m4s
-Connecting to 10.0.7.3:80... connected.
-HTTP request sent, awaiting response... Read error (Connection timed out) in headers.
-Retrying.
-
---2018-06-20 17:31:14--  (try: 2)  http://10.0.7.3/v1/12x4/out_v1_720_12x4_tiled_dash_track25_1.m4s
-Connecting to 10.0.7.3:80... failed: Network is unreachable.

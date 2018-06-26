@@ -38,16 +38,15 @@ def writeIpv4Rule(p4info_helper, ingress_sw, dst_ip_addr, dst_eth_addr, switch_p
     print "Installed ingress tunnel rule on %s" % ingress_sw.name  
 
 
-def writeArpRule(p4info_helper, ingress_sw, dst_ip_addr, switch_port, prefix_size, tunnel_id):
+def writeArpRule(p4info_helper, ingress_sw, dst_ip_addr, switch_port, prefix_size):
     table_entry = p4info_helper.buildTableEntry(
         table_name="MyIngress.arp_send",
         match_fields={
             "hdr.arp.dst_ip": (dst_ip_addr, prefix_size)
         },
-        action_name="MyIngress.arp_forward",
+        action_name="MyIngress.simple_forward",
         action_params={
-            "port": switch_port,
-            "dst_id": tunnel_id
+            "port": switch_port
         })
     ingress_sw.WriteTableEntry(table_entry)
     print "Installed ingress tunnel rule on %s" % ingress_sw.name     
@@ -225,14 +224,27 @@ def main(p4info_file_path, bmv2_file_path):
     # Write the rules that tunnel traffic from h1 to h3
 
 
-    #writeArpRule(p4info_helper, switches["s1"], "10.0.1.2", 2, 32)
-    #writeArpRule(p4info_helper, switches["s1"], "10.0.1.1", 1, 32)
+    #write Arp Rules
+
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.1", switch_port=1, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", switch_port=2, prefix_size=24)
+
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.2", 1, 32)
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.3", 2, 32)
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.4", 3, 32)
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.5", 4, 32)
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.6", 5, 32)
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.7", 6, 32)
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.8", 7, 32)
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.9", 8, 32)
+
+    #end of arp Rules
 
 
     #path1 2 -> 1
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.1.1", "00:00:00:00:01:01", 9, 32)
 
-    #delivering video
+    #delivering video to hosts
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.2", "00:00:00:00:02:02", 1, 32)
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.3", "00:00:00:00:02:03", 2, 32)
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.4", "00:00:00:00:02:04", 3, 32)
@@ -246,13 +258,11 @@ def main(p4info_file_path, bmv2_file_path):
     #request to server
     writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.1", "00:00:00:00:01:01", 1, 32)
 
-    #(without balancing) path 1 -> 2
-    # writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.0", "00:00:00:00:02:02", 2, 24)
-
     #path 1 -> 2 -> 3
     simpleForwarding(p4info_helper, switches["s3"], "10.0.2.0", 2, 24)
 
-    
+    #(without balancing) path 1 -> 2
+    # writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.0", "00:00:00:00:02:02", 2, 24)
 
     #turn on balancer
     writeBalancingEntry(p4info_helper,ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", ecmp_base=0, ecmp_count=2, prefix_size=24)
@@ -261,7 +271,7 @@ def main(p4info_file_path, bmv2_file_path):
     
     
 
-    # TODO Uncomment the following two lines to read table entries from s1 and s2
+    # Uncomment the following two lines to read table entries from s1 and s2
     readTableRules(p4info_helper, switches["s1"])
     readTableRules(p4info_helper, switches["s2"])
 

@@ -2,6 +2,7 @@
 #include <core.p4>
 #include <v1model.p4>
 
+
 const bit<16> TYPE_IPV4 = 0x800;
 const bit<16> TYPE_ARP = 0x0806;
 const bit<32> MAX_PORTS = 1 << 16;
@@ -19,6 +20,9 @@ header ethernet_t {
     macAddr_t srcAddr;
     bit<16>   etherType;
 }
+/*
+ --- note that first 64 bits are not required for my implementation 
+ */
 
 header arp_ipv4_t {
     bit<64> lixo;
@@ -58,6 +62,10 @@ header tcp_t {
 }
 
 struct metadata {
+    /*
+    this metadata is the hash output on the table pipeline. 
+   */
+
     bit<14> ecmp_select;
 }
 
@@ -130,7 +138,8 @@ control MyIngress(inout headers hdr,
     action drop() {
         mark_to_drop();
     }
-
+    
+     /*hashs the packet-in using crc16. Put the result of the (hash % ecmp_count) + ecmp_base on meta.ecmp_select*/
     action set_ecmp_select(bit<16> ecmp_base, bit<32> ecmp_count) {
         hash(meta.ecmp_select,
 	    HashAlgorithm.crc16,
@@ -143,15 +152,18 @@ control MyIngress(inout headers hdr,
 	    ecmp_count);
     }
 
+   /*set the output_port to 'port'	*/
    action simple_forward (egressSpec_t port){
          standard_metadata.egress_spec = port;
     }
 
+    /*set the output_port to 'port' and decrement ttl of the ipv4 header*/
     action set_nhop( egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
+    /*set set output_port to 'port' and decrement ttl of the ipv4 header. update the ethernet header source and destination*/	
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
@@ -221,9 +233,13 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
-    
+   
 
+   
     counter(MAX_PORTS, CounterType.packets_and_bytes) egressCounter;
+
+
+    /*Update counters of ports of this device. Whenever a packet is sent to a output port, this egress updates the number of bytes and packets the already passed*/   
 
     action count_packets() {
         egressCounter.count((bit<32>)  standard_metadata.egress_port);

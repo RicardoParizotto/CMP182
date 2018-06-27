@@ -65,7 +65,6 @@ struct metadata {
    
     //this metadata is the hash output on the table pipeline. 
     bit<14> ecmp_select;
-    //
     bit<2> AVOID_LOOP;
 }
 
@@ -75,8 +74,6 @@ struct headers {
     ipv4_t       ipv4;
     tcp_t	 tcp;
 }
-
-
 
 
 /*************************************************************************

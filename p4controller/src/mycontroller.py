@@ -16,6 +16,10 @@ import p4runtime_lib.helper
 
 import csv
 
+
+#LOAD_BALANCING_FLAG
+#for while it is static. When i solve overlapings problem 
+
 LOAD_BALANCING_FLAG = True
 
 '''
@@ -98,8 +102,6 @@ def simpleForwarding(p4info_helper, ingress_sw, dst_ip_addr, switch_port, prefix
         })
     ingress_sw.WriteTableEntry(table_entry)
     print "Installed ingress tunnel rule on %s" % ingress_sw.name
-
-
 
 
 def readTableRules(p4info_helper, sw):
@@ -202,6 +204,14 @@ def main(p4info_file_path, bmv2_file_path):
                                                  address='127.0.0.1:50053',
                                                  device_id=2)
 
+    switches["s4"] = p4runtime_lib.bmv2.Bmv2SwitchConnection('s4', 
+                                                 address='127.0.0.1:50054',
+                                                 device_id=3)
+
+    switches["s5"] = p4runtime_lib.bmv2.Bmv2SwitchConnection('s5', 
+                                                 address='127.0.0.1:50055',
+                                                 device_id=4)
+
     # Install the P4 configuration program on switches
     for k, sw in switches.items():
         sw.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
@@ -211,56 +221,87 @@ def main(p4info_file_path, bmv2_file_path):
 
     # Write the rules that tunnel traffic from h1 to h3
     #write Arp Rules
-    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.1", switch_port=1, prefix_size=32)
-    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", switch_port=2, prefix_size=24)
+    writeArpRule(p4info_helper, ingress_sw=switches["s4"], dst_ip_addr="10.0.1.0", switch_port=2, prefix_size=24)
+    writeArpRule(p4info_helper, ingress_sw=switches["s2"], dst_ip_addr="10.0.1.0", switch_port=1, prefix_size=24)
 
-    #write arp Rules on the border
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.2", 1, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.3", 2, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.4", 3, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.5", 4, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.6", 5, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.7", 6, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.8", 7, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.9", 8, 32)   
+
+    #write arp Rules on the service border
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.1", switch_port=1, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.2", switch_port=2, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.3", switch_port=3, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.4", switch_port=4, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.5", switch_port=5, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.6", switch_port=6, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.7", switch_port=7, prefix_size=32)
+    writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.8", switch_port=8, prefix_size=32)
+
+
+
+    writeArpRule(p4info_helper, switches["s1"], "10.0.4.9", 9, 32)   
     #end of arp Rules
 
     #delivering video to hosts 
     #im not treating the case when a host with different eth addres and port connect to the network
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.2", "00:00:00:00:02:02", 1, 32)
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.3", "00:00:00:00:02:03", 2, 32)
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.4", "00:00:00:00:02:04", 3, 32)
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.5", "00:00:00:00:02:05", 4, 32)
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.6", "00:00:00:00:02:06", 5, 32)
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.7", "00:00:00:00:02:07", 6, 32)
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.8", "00:00:00:00:02:08", 7, 32)
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.9", "00:00:00:00:02:09", 8, 32)
-    #end of delivery rules
-
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.1", "00:00:00:00:01:01", 1, 32)
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.2", "00:00:00:00:01:02", 2, 32)
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.3", "00:00:00:00:01:03", 3, 32)
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.4", "00:00:00:00:01:04", 4, 32)
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.5", "00:00:00:00:01:05", 5, 32)
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.6", "00:00:00:00:01:06", 6, 32)
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.7", "00:00:00:00:01:07", 7, 32)
+    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.8", "00:00:00:00:01:08", 8, 32)
+    #end of delivery
 
     #setting the paths ----     
+    #path1 1 -> 4
+    simpleForwarding(p4info_helper, switches["s1"], "10.0.4.9", 9, 32)
+    simpleForwarding(p4info_helper, switches["s2"], "10.0.4.9", 3, 32)
 
-    #path1 2 -> 1
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.1.1", "00:00:00:00:01:01", 9, 32)
+    #writeIpv4Rule(p4info_helper, switches["s1"], "10.0.4.9", "00:00:00:00:04:09", 9, 32)
+    #writeIpv4Rule(p4info_helper, switches["s2"], "10.0.4.9", "00:00:00:00:04:09", 3, 32)
 
     #request to server rule
-    writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.1", "00:00:00:00:01:01", 1, 32)
+    writeIpv4Rule(p4info_helper, switches["s4"], "10.0.4.9", "00:00:00:00:04:09", 1, 32)
 
     #path 1 -> 2 -> 3
-    simpleForwarding(p4info_helper, switches["s3"], "10.0.2.0", 2, 24)
+    #simpleForwarding(p4info_helper, switches["s3"], "10.0.2.0", 2, 24)
 
 
     if(LOAD_BALANCING_FLAG):
         #set output ports of the balancing -- ecmp_cout must be equal to the number of paths. 
-        writeBalancingEntry(p4info_helper,ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", ecmp_base=0, ecmp_count=2, prefix_size=24)
+        writeBalancingEntry(p4info_helper,ingress_sw=switches["s4"], dst_ip_addr="10.0.1.0", ecmp_base=0, ecmp_count=3, prefix_size=24)
+
+        
         #flow 1 is sent from switch s1 through port 2
-        setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=1, switch_port=2)
+        setNextHop(p4info_helper, ingress_sw=switches["s4"], ecmp_select=0, switch_port=2)
+        #flow 1 is sent from switch s1 through port 3
+        setNextHop(p4info_helper, ingress_sw=switches["s4"], ecmp_select=1, switch_port=3)
+        #flow 1 is sent from switch s1 through port 4
+        setNextHop(p4info_helper, ingress_sw=switches["s4"], ecmp_select=2, switch_port=4)
+
+
+        writeBalancingEntry(p4info_helper,ingress_sw=switches["s5"], dst_ip_addr="10.0.1.0", ecmp_base=0, ecmp_count=2, prefix_size=24)
         #flow 1 is sent from switch s1 through port 2
-        setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=0, switch_port=3)
+        setNextHop(p4info_helper, ingress_sw=switches["s5"], ecmp_select=0, switch_port=1)
+        #flow 1 is sent from switch s1 through port 3
+        setNextHop(p4info_helper, ingress_sw=switches["s5"], ecmp_select=1, switch_port=2)
+
+
+
+        writeBalancingEntry(p4info_helper,ingress_sw=switches["s2"], dst_ip_addr="10.0.1.0", ecmp_base=0, ecmp_count=1, prefix_size=24)
+        #flow 1 is sent from switch s1 through port 2
+        setNextHop(p4info_helper, ingress_sw=switches["s2"], ecmp_select=0, switch_port=1)
+
+
+
+        writeBalancingEntry(p4info_helper,ingress_sw=switches["s3"], dst_ip_addr="10.0.1.0", ecmp_base=0, ecmp_count=1, prefix_size=24)
+        #flow 1 is sent from switch s1 through port 2
+        setNextHop(p4info_helper, ingress_sw=switches["s3"], ecmp_select=0, switch_port=1)
+
     else:
         #(without balancing) path 1 -> 2
+        simpleForwarding(p4info_helper, switches["s1"], "10.0.4.9", 3, 32)
         writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.0", "00:00:00:00:02:02", 2, 24)
-
 
     #ifdebug
     #Uncomment the following two lines to read table entries from s1 and s2
@@ -272,9 +313,7 @@ def main(p4info_file_path, bmv2_file_path):
     snapshot_module =  Thread(target=snapshoting, args=[p4info_helper, switches["s1"], "MyEgress.egressCounter", 0])
     snapshot_module.start();
 
-    #snapshoting(p4info_helper, switches["s1"], "MyEgress.egressCounter", 0)
-
-    print("asdasdadsad")
+    print("DEBUG")
 
     '''
     try:

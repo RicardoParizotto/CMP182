@@ -62,11 +62,11 @@ header tcp_t {
 }
 
 struct metadata {
-    /*
-    this metadata is the hash output on the table pipeline. 
-   */
-
+   
+    //this metadata is the hash output on the table pipeline. 
     bit<14> ecmp_select;
+    //
+    bit<2> AVOID_LOOP;
 }
 
 struct headers {
@@ -75,6 +75,9 @@ struct headers {
     ipv4_t       ipv4;
     tcp_t	 tcp;
 }
+
+
+
 
 /*************************************************************************
 *********************** P A R S E R  ***********************************
@@ -150,6 +153,8 @@ control MyIngress(inout headers hdr,
               hdr.tcp.srcPort,
               hdr.tcp.dstPort },
 	    ecmp_count);
+
+	    meta.AVOID_LOOP = 1;
     }
 
    /*set the output_port to 'port'	*/
@@ -218,7 +223,7 @@ control MyIngress(inout headers hdr,
 	        if (hdr.ipv4.isValid()) {
 	            ipv4_lpm.apply();
 	
-	            if( standard_metadata.ingress_port == 1){
+	            if(meta.AVOID_LOOP == 1){
 	           	     ecmp_nhop.apply();
          	     }	
 		}

@@ -1,7 +1,10 @@
 #!/usr/bin/env python2
 import argparse
 import os
+
+from threading import Thread
 from time import sleep
+
 
 # NOTE: Appending to the PYTHON_PATH is only required in the `solution` directory.
 #       It is not required for mycontroller.py in the top-level directory.
@@ -12,6 +15,8 @@ import p4runtime_lib.bmv2
 import p4runtime_lib.helper
 
 import csv
+
+LOAD_BALANCING_FLAG = True
 
 '''
 
@@ -97,8 +102,6 @@ def simpleForwarding(p4info_helper, ingress_sw, dst_ip_addr, switch_port, prefix
 
 
 
-
-
 def readTableRules(p4info_helper, sw):
     '''
     Reads the table entries from all tables on the switch.
@@ -125,26 +128,10 @@ def readTableRules(p4info_helper, sw):
                 print '%r' % p.value,
             print
 
-def printCounter(p4info_helper, sw, counter_name, index):
-    '''
-    Reads the specified counter at the specified index from the switch. In our
-    program, the index is the tunnel ID. If the index is 0, it will return all
-    values from the counter.
 
-    :param p4info_helper: the P4Info helper
-    :param sw:  the switch connection
-    :param counter_name: the name of the counter from the P4 program
-    :param index: the counter index (in our case, the tunnel ID)
-    '''
-
-    for response in sw.ReadCounters(p4info_helper.get_counters_id(counter_name), index):
-        for entity in response.entities:
-            counter = entity.counter_entry
-            print "%s %s %d: %d packets (%d bytes)" % (
-                sw.name, counter_name, index,
-                counter.data.packet_count, counter.data.byte_count
-            )
-
+#Collects counters switch sw ports
+#TODO store statistics on a structure visible to another threads ---
+#For now, it just print statistics to validate my study case
 def snapshoting(p4info_helper, sw, counter_name, index):
     '''
     Reads the specified counter at the specified index from the switch. In our
@@ -156,18 +143,15 @@ def snapshoting(p4info_helper, sw, counter_name, index):
     :param counter_name: the name of the counter from the P4 program
     :param index: the counter index (in our case, the tunnel ID)
     '''
-
     last_snapshot = {}
     last_snapshot[1] = 0
     last_snapshot[2] = 0
-
 
     asdfsdf = {}
     asdfsdf[1] = 0
     asdfsdf[2] = 0
 
     myFile =  open('eggs.csv', 'w')
-
 
     try:
         while True:
@@ -177,7 +161,12 @@ def snapshoting(p4info_helper, sw, counter_name, index):
                     counter = entity.counter_entry
                     asdfsdf[1] = (counter.data.byte_count - last_snapshot[2])
                     last_snapshot[2] = counter.data.byte_count
-
+                    '''
+                    print "%s %s %d: %d packets (%d bytes)" % (
+                    sw.name, counter_name, index,
+                    counter.data.packet_count, counter.data.byte_count
+                    )
+                    '''
             for response in sw.ReadCounters(p4info_helper.get_counters_id(counter_name), 3):
                 for entity in response.entities:
                     counter = entity.counter_entry
@@ -199,7 +188,6 @@ def main(p4info_file_path, bmv2_file_path):
     # Create switch connection objects;
     # this is backed by a P4 Runtime gRPC connection
     # use a dict here  //ricardo
-
     switches = {}
 
     switches["s1"] = p4runtime_lib.bmv2.Bmv2SwitchConnection('s1', 
@@ -214,21 +202,19 @@ def main(p4info_file_path, bmv2_file_path):
                                                  address='127.0.0.1:50053',
                                                  device_id=2)
 
-
-    # Install the P4 program on switches
+    # Install the P4 configuration program on switches
     for k, sw in switches.items():
         sw.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
                                    bmv2_json_file_path=bmv2_file_path)
         print "Installed P4 Program using SetForwardingPipelineConfig on %s" % sw.name
 
+
     # Write the rules that tunnel traffic from h1 to h3
-
-
     #write Arp Rules
-
     writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.1.1", switch_port=1, prefix_size=32)
     writeArpRule(p4info_helper, ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", switch_port=2, prefix_size=24)
 
+    #write arp Rules on the border
     writeArpRule(p4info_helper, switches["s2"], "10.0.2.2", 1, 32)
     writeArpRule(p4info_helper, switches["s2"], "10.0.2.3", 2, 32)
     writeArpRule(p4info_helper, switches["s2"], "10.0.2.4", 3, 32)
@@ -236,15 +222,11 @@ def main(p4info_file_path, bmv2_file_path):
     writeArpRule(p4info_helper, switches["s2"], "10.0.2.6", 5, 32)
     writeArpRule(p4info_helper, switches["s2"], "10.0.2.7", 6, 32)
     writeArpRule(p4info_helper, switches["s2"], "10.0.2.8", 7, 32)
-    writeArpRule(p4info_helper, switches["s2"], "10.0.2.9", 8, 32)
-
+    writeArpRule(p4info_helper, switches["s2"], "10.0.2.9", 8, 32)   
     #end of arp Rules
 
-
-    #path1 2 -> 1
-    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.1.1", "00:00:00:00:01:01", 9, 32)
-
-    #delivering video to hosts
+    #delivering video to hosts 
+    #im not treating the case when a host with different eth addres and port connect to the network
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.2", "00:00:00:00:02:02", 1, 32)
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.3", "00:00:00:00:02:03", 2, 32)
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.4", "00:00:00:00:02:04", 3, 32)
@@ -253,30 +235,47 @@ def main(p4info_file_path, bmv2_file_path):
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.7", "00:00:00:00:02:07", 6, 32)
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.8", "00:00:00:00:02:08", 7, 32)
     writeIpv4Rule(p4info_helper, switches["s2"], "10.0.2.9", "00:00:00:00:02:09", 8, 32)
+    #end of delivery rules
 
 
-    #request to server
+    #setting the paths ----     
+
+    #path1 2 -> 1
+    writeIpv4Rule(p4info_helper, switches["s2"], "10.0.1.1", "00:00:00:00:01:01", 9, 32)
+
+    #request to server rule
     writeIpv4Rule(p4info_helper, switches["s1"], "10.0.1.1", "00:00:00:00:01:01", 1, 32)
 
     #path 1 -> 2 -> 3
     simpleForwarding(p4info_helper, switches["s3"], "10.0.2.0", 2, 24)
 
-    #(without balancing) path 1 -> 2
-    # writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.0", "00:00:00:00:02:02", 2, 24)
 
-    #turn on balancer
-    writeBalancingEntry(p4info_helper,ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", ecmp_base=0, ecmp_count=2, prefix_size=24)
-    setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=1, switch_port=2)
-    setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=0, switch_port=3)
-    
-    
-
-    # Uncomment the following two lines to read table entries from s1 and s2
-    readTableRules(p4info_helper, switches["s1"])
-    readTableRules(p4info_helper, switches["s2"])
+    if(LOAD_BALANCING_FLAG):
+        #set output ports of the balancing -- ecmp_cout must be equal to the number of paths. 
+        writeBalancingEntry(p4info_helper,ingress_sw=switches["s1"], dst_ip_addr="10.0.2.0", ecmp_base=0, ecmp_count=2, prefix_size=24)
+        #flow 1 is sent from switch s1 through port 2
+        setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=1, switch_port=2)
+        #flow 1 is sent from switch s1 through port 2
+        setNextHop(p4info_helper, ingress_sw=switches["s1"], ecmp_select=0, switch_port=3)
+    else:
+        #(without balancing) path 1 -> 2
+        writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.0", "00:00:00:00:02:02", 2, 24)
 
 
-    snapshoting(p4info_helper, switches["s1"], "MyEgress.egressCounter", 0)
+    #ifdebug
+    #Uncomment the following two lines to read table entries from s1 and s2
+    #readTableRules(p4info_helper, switches["s1"])
+    #readTableRules(p4info_helper, switches["s2"])
+    #endif
+
+    #start the snapshoting module
+    snapshot_module =  Thread(target=snapshoting, args=[p4info_helper, switches["s1"], "MyEgress.egressCounter", 0])
+    snapshot_module.start();
+
+    #snapshoting(p4info_helper, switches["s1"], "MyEgress.egressCounter", 0)
+
+    print("asdasdadsad")
+
     '''
     try:
         while True:

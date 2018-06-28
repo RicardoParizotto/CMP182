@@ -20,7 +20,7 @@ import csv
 #LOAD_BALANCING_FLAG
 #for while it is static. When i solve overlapings problem 
 
-LOAD_BALANCING_FLAG = True
+LOAD_BALANCING_FLAG = False
 
 '''
 
@@ -271,7 +271,7 @@ def main(p4info_file_path, bmv2_file_path):
         #set output ports of the balancing -- ecmp_cout must be equal to the number of paths. 
         writeBalancingEntry(p4info_helper,ingress_sw=switches["s4"], dst_ip_addr="10.0.1.0", ecmp_base=0, ecmp_count=3, prefix_size=24)
 
-        
+
         #flow 1 is sent from switch s1 through port 2
         setNextHop(p4info_helper, ingress_sw=switches["s4"], ecmp_select=0, switch_port=2)
         #flow 1 is sent from switch s1 through port 3
@@ -299,9 +299,10 @@ def main(p4info_file_path, bmv2_file_path):
         setNextHop(p4info_helper, ingress_sw=switches["s3"], ecmp_select=0, switch_port=1)
 
     else:
-        #(without balancing) path 1 -> 2
-        simpleForwarding(p4info_helper, switches["s1"], "10.0.4.9", 3, 32)
-        writeIpv4Rule(p4info_helper, switches["s1"], "10.0.2.0", "00:00:00:00:02:02", 2, 24)
+        #(without balancing) path 4 -> 2
+        simpleForwarding(p4info_helper, switches["s4"], "10.0.1.0", 2, 24)
+        simpleForwarding(p4info_helper, switches["s2"], "10.0.1.0", 1, 24)
+
 
     #ifdebug
     #Uncomment the following two lines to read table entries from s1 and s2
@@ -309,7 +310,7 @@ def main(p4info_file_path, bmv2_file_path):
     #readTableRules(p4info_helper, switches["s2"])
     #endif
 
-    #start the snapshoting module
+    #start the snapshoting module ...
     snapshot_module =  Thread(target=snapshoting, args=[p4info_helper, switches["s1"], "MyEgress.egressCounter", 0])
     snapshot_module.start();
 

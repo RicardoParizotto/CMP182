@@ -236,10 +236,7 @@ control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
    
-
-   
     counter(MAX_PORTS, CounterType.packets_and_bytes) egressCounter;
-
 
     /*Update counters of ports of this device. Whenever a packet is sent to a output port, this egress updates the number of bytes and packets the already passed*/   
 

@@ -28,6 +28,7 @@ from mininet.net import Mininet
 from mininet.topo import Topo
 from mininet.link import TCLink
 from mininet.cli import CLI
+from subprocess import Popen
 
 from p4runtime_switch import P4RuntimeSwitch
 
@@ -87,6 +88,7 @@ class ExerciseTopo(Topo):
 
         for sw in switches:
             self.addSwitch(sw, log_file="%s/%s.log" %(log_dir, sw))
+
 
         for link in host_links:
             host_name = link['node1']
@@ -207,6 +209,13 @@ class ExerciseRunner:
 
         # wait for that to finish. Not sure how to do this better
         sleep(1)
+
+        TIMEOUT = 1000
+
+        interfaces = [i.name for s in self.switches for i in self.net.get(s).intfList()[1:]] #interfaces names
+        for i in interfaces:
+            Popen(['../../utils/scripts/netpps.sh', i, str(TIMEOUT)])
+            Popen(['../../utils/scripts/netbytes.sh', i, str(TIMEOUT)])
 
         self.do_net_cli()
         # stop right after the CLI is exited

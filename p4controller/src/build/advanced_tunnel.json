@@ -11,7 +11,7 @@
       "fields" : [
         ["tmp", 32, false],
         ["metadata.ecmp_select", 14, false],
-        ["_padding_0", 2, false]
+        ["metadata.AVOID_LOOP", 2, false]
       ]
     },
     {
@@ -289,7 +289,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "advanced_tunnel.p4",
-        "line" : 281,
+        "line" : 280,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
@@ -345,7 +345,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "advanced_tunnel.p4",
-        "line" : 259,
+        "line" : 258,
         "column" : 1,
         "source_fragment" : "update_checksum( ..."
       },
@@ -492,6 +492,25 @@
             "column" : 8,
             "source_fragment" : "hash(meta.ecmp_select, ..."
           }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "metadata.AVOID_LOOP"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01"
+            }
+          ],
+          "source_info" : {
+            "filename" : "advanced_tunnel.p4",
+            "line" : 154,
+            "column" : 5,
+            "source_fragment" : "meta.AVOID_LOOP = 1"
+          }
         }
       ]
     },
@@ -519,7 +538,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 157,
+            "line" : 159,
             "column" : 9,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -550,7 +569,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 157,
+            "line" : 159,
             "column" : 9,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -581,7 +600,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 162,
+            "line" : 164,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -623,7 +642,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 163,
+            "line" : 165,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -658,7 +677,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 168,
+            "line" : 170,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -677,7 +696,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 169,
+            "line" : 171,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = hdr.ethernet.dstAddr"
           }
@@ -696,7 +715,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 170,
+            "line" : 172,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dstAddr"
           }
@@ -738,7 +757,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 171,
+            "line" : 173,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -790,7 +809,7 @@
           ],
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 245,
+            "line" : 244,
             "column" : 8,
             "source_fragment" : "egressCounter.count((bit<32>) standard_metadata.egress_port)"
           }
@@ -815,7 +834,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 174,
+            "line" : 176,
             "column" : 10,
             "source_fragment" : "arp_send"
           },
@@ -852,7 +871,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 186,
+            "line" : 188,
             "column" : 10,
             "source_fragment" : "ipv4_lpm"
           },
@@ -892,7 +911,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 201,
+            "line" : 203,
             "column" : 10,
             "source_fragment" : "ecmp_nhop"
           },
@@ -933,7 +952,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 215,
+            "line" : 217,
             "column" : 11,
             "source_fragment" : "hdr.arp.isValid()"
           },
@@ -956,7 +975,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 218,
+            "line" : 220,
             "column" : 13,
             "source_fragment" : "hdr.ipv4.isValid()"
           },
@@ -979,9 +998,9 @@
           "id" : 2,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 221,
-            "column" : 17,
-            "source_fragment" : "standard_metadata.ingress_port == 1"
+            "line" : 223,
+            "column" : 16,
+            "source_fragment" : "meta.AVOID_LOOP == 1"
           },
           "expression" : {
             "type" : "expression",
@@ -989,11 +1008,11 @@
               "op" : "==",
               "left" : {
                 "type" : "field",
-                "value" : ["standard_metadata", "ingress_port"]
+                "value" : ["scalars", "metadata.AVOID_LOOP"]
               },
               "right" : {
                 "type" : "hexstr",
-                "value" : "0x0001"
+                "value" : "0x01"
               }
             }
           },
@@ -1007,7 +1026,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "advanced_tunnel.p4",
-        "line" : 233,
+        "line" : 235,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
